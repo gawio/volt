@@ -1,6 +1,7 @@
 export EVN_USERNAME=""
 export EVN_PASSWORD=""
 export EVN_BASE_URL=""
+export EVN_CUSTOMER=""
 export EVN_LOGIN_API=""
 export EVN_ELECTRICITY_CONSUMPTION_API=""
 
