@@ -101,6 +101,7 @@ sequenceDiagram
     export EVN_CUSTOMER_CODE="your_customer_code"
     
     export TELEGRAM_API_KEY=""
+    export TELEGRAM_CHAT_ID=""
     ```
 
 3. Load variables:
