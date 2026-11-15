@@ -39,7 +39,7 @@ func (r *Router) DefaultHandler() telegram.MessageHandler {
 				r.log.Error("handle_get_failed", map[string]any{"error": err.Error()})
 			}
 		case "/start", "/help":
-			msg := "Volt Telegram Bot\n\nDanh sách lệnh:\n/yesterday - Xem sản lượng điện ngày hôm qua\n/sync [from_date] [to_date] - Đồng bộ dữ liệu từ EVN (mặc định: từ đầu tháng)\n/get - Xem toàn bộ dữ liệu"
+			msg := "Volt Telegram Bot\n\nDanh sách lệnh:\n/yesterday - Xem sản lượng điện ngày hôm qua\n/sync [from_date] [to_date] - Đồng bộ dữ liệu từ EVN (mặc định: từ đầu tháng)\n/get - Xem dữ liệu và tiền điện tháng này"
 			if err := r.telegramClient.SendMessage(ctx, chatID, msg); err != nil {
 				r.log.Error("handle_help_failed", map[string]any{"error": err.Error()})
 			}

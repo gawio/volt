@@ -82,6 +82,25 @@ func (repository *ElectricityRepository) FetchAll(ctx context.Context) ([]*entit
 	if err != nil {
 		return nil, fmt.Errorf("find all electricity consumption: %w", err)
 	}
+	return scanConsumptions(rows)
+}
+
+func (repository *ElectricityRepository) FetchFromDateToDate(ctx context.Context, fromDate, toDate time.Time) ([]*entity.ElectricityConsumption, error) {
+	query := `
+		SELECT id, measurement_date, consumption_kwh, created_at
+		FROM electricity_consumption
+		WHERE measurement_date >= $1 AND measurement_date <= $2
+		ORDER BY measurement_date
+	`
+
+	rows, err := repository.db.QueryContext(ctx, query, fromDate, toDate)
+	if err != nil {
+		return nil, fmt.Errorf("find electricity consumption by date range: %w", err)
+	}
+	return scanConsumptions(rows)
+}
+
+func scanConsumptions(rows *sql.Rows) ([]*entity.ElectricityConsumption, error) {
 	defer rows.Close()
 
 	consumptions := make([]*entity.ElectricityConsumption, 0)

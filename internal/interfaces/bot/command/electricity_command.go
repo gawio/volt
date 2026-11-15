@@ -55,18 +55,18 @@ func (c *ElectricityCommand) HandleYesterdayCommand(ctx context.Context, chatID 
 }
 
 func (c *ElectricityCommand) HandleGetAllCommand(ctx context.Context, chatID int64) error {
-	resp, err := c.service.All(ctx)
+	resp, err := c.service.CurrentMonth(ctx)
 	if err != nil {
-		c.log.Error("failed_to_get_all_usage", map[string]any{"error": err.Error()})
+		c.log.Error("failed_to_get_current_month_usage", map[string]any{"error": err.Error()})
 		return c.telegramClient.SendMessage(ctx, chatID, "Failed to fetch data: "+err.Error())
 	}
 
 	if len(resp.Data) == 0 {
-		return c.telegramClient.SendMessage(ctx, chatID, "Chưa có dữ liệu sản lượng điện.")
+		return c.telegramClient.SendMessage(ctx, chatID, "Chưa có dữ liệu sản lượng điện tháng này.")
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Danh sách sản lượng điện (%d ngày):\n\n", len(resp.Data)))
+	sb.WriteString(fmt.Sprintf("Sản lượng điện tháng này (%d ngày):\n\n", len(resp.Data)))
 	for _, usage := range resp.Data {
 		sb.WriteString(fmt.Sprintf("• Ngày %s: %.2f KWh | %s\n",
 			usage.MeasurementDate.Format("02/01/2006"),
@@ -74,7 +74,7 @@ func (c *ElectricityCommand) HandleGetAllCommand(ctx context.Context, chatID int
 			utils.FormatVND(usage.TotalAmount),
 		))
 	}
-	sb.WriteString(fmt.Sprintf("\n Tổng tiêu thụ: %.2f KWh\n Tổng tiền ước tính: %s",
+	sb.WriteString(fmt.Sprintf("\n Tổng tiêu thụ: %.2f KWh\n Tổng tiền tháng này: %s",
 		resp.TotalKWh, utils.FormatVND(resp.TotalAmount),
 	))
 

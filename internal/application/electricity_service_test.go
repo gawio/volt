@@ -45,6 +45,16 @@ func (r *fakeRepo) FetchAll(_ context.Context) ([]*entity.ElectricityConsumption
 	return out, nil
 }
 
+func (r *fakeRepo) FetchFromDateToDate(_ context.Context, from, to time.Time) ([]*entity.ElectricityConsumption, error) {
+	var out []*entity.ElectricityConsumption
+	for _, c := range r.rows {
+		if !c.MeasurementDate.Before(from) && !c.MeasurementDate.After(to) {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
 func (r *fakeRepo) CalculateTotalConsumptionFromDateToDate(_ context.Context, from, to time.Time) (float64, error) {
 	var total float64
 	for _, c := range r.rows {
@@ -240,5 +250,25 @@ func TestAll_BillsEachDayAndTheTotal(t *testing.T) {
 		if want := utils.CalculateElectricityBill(d.ConsumptionKWh); !almostEqual(d.TotalAmount, want) {
 			t.Errorf("day %s TotalAmount = %v, want %v", key(d.MeasurementDate), d.TotalAmount, want)
 		}
+	}
+}
+
+func TestCurrentMonth_OnlyIncludesAndBillsCurrentMonth(t *testing.T) {
+	repo := newFakeRepo()
+	repo.rows["2026-10-31"] = &entity.ElectricityConsumption{MeasurementDate: vietnamTime(t, 2026, time.October, 31, 0), ConsumptionKWh: 100}
+	repo.rows["2026-11-01"] = &entity.ElectricityConsumption{MeasurementDate: vietnamTime(t, 2026, time.November, 1, 0), ConsumptionKWh: 30}
+	repo.rows["2026-11-02"] = &entity.ElectricityConsumption{MeasurementDate: vietnamTime(t, 2026, time.November, 2, 0), ConsumptionKWh: 40}
+	s := newTestService(t, repo, &fakeEVN{}, vietnamTime(t, 2026, time.November, 3, 9))
+
+	got, err := s.CurrentMonth(context.Background())
+	if err != nil {
+		t.Fatalf("CurrentMonth: %v", err)
+	}
+
+	if len(got.Data) != 2 || got.TotalKWh != 70 {
+		t.Fatalf("got %d rows, %v kWh; want 2 rows, 70 kWh", len(got.Data), got.TotalKWh)
+	}
+	if want := utils.CalculateElectricityBill(70); !almostEqual(got.TotalAmount, want) {
+		t.Errorf("TotalAmount = %v, want %v", got.TotalAmount, want)
 	}
 }

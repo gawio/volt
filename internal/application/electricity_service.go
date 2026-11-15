@@ -150,7 +150,25 @@ func (s *ElectricityService) All(ctx context.Context) (ElectricitySummary, error
 	if err != nil {
 		return ElectricitySummary{}, fmt.Errorf("failed to fetch all electricity: %w", err)
 	}
+	return summarize(rows), nil
+}
 
+// CurrentMonth returns usage from the first day of the current month (Vietnam time) up to now,
+// billed as a single month.
+func (s *ElectricityService) CurrentMonth(ctx context.Context) (ElectricitySummary, error) {
+	location, err := utils.LoadVietnamTimezone()
+	if err != nil {
+		return ElectricitySummary{}, err
+	}
+	now := s.now().In(location)
+	rows, err := s.repo.FetchFromDateToDate(ctx, utils.GetFirstDayOfMonth(now, location), now)
+	if err != nil {
+		return ElectricitySummary{}, fmt.Errorf("failed to fetch current month electricity: %w", err)
+	}
+	return summarize(rows), nil
+}
+
+func summarize(rows []*entity.ElectricityConsumption) ElectricitySummary {
 	var (
 		totalKWh float64
 		data     []*ElectricityConsumption
@@ -168,5 +186,5 @@ func (s *ElectricityService) All(ctx context.Context) (ElectricitySummary, error
 		TotalKWh:    totalKWh,
 		TotalAmount: utils.CalculateElectricityBill(totalKWh),
 		Data:        data,
-	}, nil
+	}
 }
