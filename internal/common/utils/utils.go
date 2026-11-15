@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"time"
 	_ "time/tzdata"
 
@@ -46,34 +47,40 @@ func GetFirstDayOfMonth(now time.Time, loc *time.Location) time.Time {
 	)
 }
 
-func CalculateElectricityBill(totalKWh float64) float64 {
-	tiers := []struct {
-		limit float64
-		price float64
-	}{
-		{50, 1893},
-		{50, 1956},
-		{100, 2271},
-		{100, 2860},
-		{100, 3197},
-		{0, 3302},
-	}
+// electricityTiers is the residential tariff from 01/11/2026 (đồng/kWh, before VAT).
+// A limit of 0 means "all remaining kWh".
+var electricityTiers = []struct {
+	limit float64
+	price float64
+}{
+	{100, 1901}, // Bậc 1: 0–100 kWh
+	{100, 2289}, // Bậc 2: 101–200 kWh
+	{200, 2894}, // Bậc 3: 201–400 kWh
+	{300, 3456}, // Bậc 4: 401–700 kWh
+	{0, 3844},   // Bậc 5: 701 kWh trở lên
+}
 
-	var totalAmount float64
+const electricityVATRate = 0.08
+
+// CalculateElectricityBill returns the bill including VAT, rounded to whole đồng
+// the way EVN does: subtotal and VAT are each rounded, then summed.
+func CalculateElectricityBill(totalKWh float64) float64 {
+	var subtotal float64
 	remainingKWh := totalKWh
-	for _, tier := range tiers {
+	for _, tier := range electricityTiers {
 		if remainingKWh <= 0 {
 			break
 		}
 		if tier.limit == 0 || remainingKWh <= tier.limit {
-			totalAmount += remainingKWh * tier.price
+			subtotal += remainingKWh * tier.price
 			break
 		}
-		totalAmount += tier.limit * tier.price
+		subtotal += tier.limit * tier.price
 		remainingKWh -= tier.limit
 	}
-	totalAmountWithVAT := totalAmount * 1.08
-	return totalAmountWithVAT
+	subtotal = math.Round(subtotal)
+	vat := math.Round(subtotal * electricityVATRate)
+	return subtotal + vat
 }
 
 func FormatVND(amount float64) string {
